@@ -173,4 +173,4 @@ function cleanInput(data) {
 var server = net.createServer(newSocket);
  
 // Listen on port
-server.listen(9399);
+server.listen(80);
