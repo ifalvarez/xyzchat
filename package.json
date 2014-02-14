@@ -10,7 +10,8 @@
   "dependencies": {
     "socket.io": "~0.9.16",
     "socket.io-client": "~0.9.16",
-    "underscore": "~1.6.0"
+    "underscore": "~1.6.0",
+    "express": "~3.4.8"
   },
   "devDependencies": {},
   "scripts": {

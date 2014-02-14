@@ -5,7 +5,7 @@ var io = require('socket.io-client');
  * Callback called when a new user connets to a socket.
  */
 function newSocket(socket) {
-	console.log("new client");
+	console.log("new telnet client");
 	socket.webSocket = io.connect('http://localhost:7777', {'force new connection': true});
 	socket.on('data', function(data) {
 		data = cleanInput(data);

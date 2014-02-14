@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" type="text/css" href="bootstrap/css/bootstrap.min.css" />
+</head>
+<body>
+
+  <div id="container">
+      <section id="messages-container">
+          <div id="messages"></div>
+      </section>
+      <section id="users"></section>
+      
+      <div class="clear"></div>
+
+      <section id="msg-input">
+          <input name="message" size="50" type="text" placeholder="Mensaje..." />
+      </section>
+  </div>
+
+  <script type="text/javascript" src="/socket.io/socket.io.js"></script>
+  <script type="text/javascript" src="js/jquery-2.1.0.min.js"></script>
+  <script type="text/javascript">
+    $(function(){
+      var socket = io.connect('http://' + window.location.hostname + ':7777', {'force new connection': true});
+      $('#msg-input input').keypress(function(e) {
+          if (e.which == 13) {
+              socket.send($(this).val());
+              $(this).val('');
+          }
+      });
+
+      socket.on("message", function(msg) {
+          $(document.createElement("div"))
+          .html(msg)
+          .appendTo("#messages");
+
+          // See the last message
+          $('#messages-container').scrollTop($('#messages').height());
+      });
+      $(window).on('beforeunload', function(){
+        socket.close();
+      });
+    });
+
+  </script>
+</body>
+</html>
