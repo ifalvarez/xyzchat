@@ -1,4 +1,4 @@
-var net = require('net');
+var io = require('socket.io').listen(7777);
 var __ = require('underscore');
  
 var users = [];
@@ -15,15 +15,14 @@ function newSocket(socket) {
 	var user = {socket: socket, status: GETTING_NICKNAME, nickname: "Guest"};
 	users.push(user);
 	socket.user = user;
-	socket.write('Welcome to the XYZ chat server\n');
-	socket.write('Login Name?\n');
+	socket.send('Welcome to the XYZ chat server\n');
+	socket.send('Login Name?\n');
 
-	socket.on('data', function(data) {
-		data = cleanInput(data);
-		onData(socket, data);
+	socket.on('message', function(msg) {
+		onData(socket, msg);
 	});
 
-	socket.on('end', function() {
+	socket.on('disconnect', function() {
 		var user = socket.user;
 		delete user.socket;
 		delete socket.user;
@@ -50,7 +49,7 @@ function onData(socket, data) {
 		if (user.room){
 			sendMessage(user.room, user.nickname + ": " + data );
 		}else{
-			socket.write("Join a room first using /join or see a list of the active rooms with /rooms\n");
+			socket.send("Join a room first using /join or see a list of the active rooms with /rooms\n");
 		}		
 	}
 	
@@ -65,12 +64,12 @@ function assignNickname(socket, nickname){
 		return memo || iuser.nickname == nickname;
 	}, false);
 	if(isNameUsed){
-		socket.write('Sorry name taken\n');
-		socket.write('Login name?\n');
+		socket.send('Sorry name taken\n');
+		socket.send('Login name?\n');
 	}else{
 		user.nickname = nickname;
 		user.status = READY;
-		socket.write('Welcome ' + nickname + '!\n');
+		socket.send('Welcome ' + nickname + '!\n');
 	}
 }
 
@@ -81,27 +80,31 @@ function executeCommand(socket, command){
 	var args = command.split(" ");
 	switch(args[0]){
 		case '/quit':
-			socket.end('BYE\n');
+			if (socket.user.room){
+				leaveRoom(socket.user);
+			}
+			socket.send('BYE\n');
+			socket.emit('end');
 			break;
 		case '/rooms':
-			socket.write('Active rooms are:\n');
+			socket.send('Active rooms are:\n');
 			__.each(rooms, function (room){
-				socket.write('* ' + room.name + ' (' + room.users.length + ')\n');
+				socket.send('* ' + room.name + ' (' + room.users.length + ')\n');
 			});
-			socket.write("end of list.\n");
+			socket.send("end of list.\n");
 			break;
 		case '/join':
 			if (args[1]) {
 				joinRoom(args[1], socket.user);
 			}else {
-				socket.write("Specify a room to join. e.g: /join games\n");
+				socket.send("Specify a room to join. e.g: /join games\n");
 			}
 			break;
 		case '/leave':
 			leaveRoom(socket.user);
 			break;
 		default:
-			socket.write('Unrecognized command\n');
+			socket.send('Unrecognized command\n');
 	}
 }
 
@@ -110,7 +113,7 @@ function executeCommand(socket, command){
  */
 function sendMessage(room, message){
 	__.each(room.users, function(user){
-		user.socket.write(message + '\n');
+		user.socket.send(message + '\n');
 	});
 }
 
@@ -120,7 +123,7 @@ function sendMessage(room, message){
 function sendMessageFiltered(room, message, sender){
 	__.each(room.users, function(user){
 		if(sender != user){
-			user.socket.write(message + '\n');
+			user.socket.send(message + '\n');
 		}
 	});
 }
@@ -136,15 +139,15 @@ function joinRoom(roomName, user){
 	}
 	user.room = room;
 	user.room.users.push(user);
-	user.socket.write("entering room: " + roomName + '\n');
+	user.socket.send("entering room: " + roomName + '\n');
 	__.each(user.room.users, function(iuser){
-		user.socket.write("* " + iuser.nickname);
+		user.socket.send("* " + iuser.nickname);
 		if (iuser == user){
-			user.socket.write(" (** this is you)");
+			user.socket.send(" (** this is you)");
 		}
-		user.socket.write("\n");
+		user.socket.send("\n");
 	});
-	user.socket.write("end of list.\n");
+	user.socket.send("end of list.\n");
 	sendMessageFiltered(room, "* new user joined " + roomName + ": " + user.nickname, user);
 }
 
@@ -159,18 +162,7 @@ function leaveRoom(user){
 	}
 	user.room = null;
 	sendMessageFiltered(room, "* user has left " + room.name + ": " + user.nickname);
-	user.socket.write("* user has left " + room.name + ": " + user.nickname + " (** this is you)\n");
+	user.socket.send("* user has left " + room.name + ": " + user.nickname + " (** this is you)\n");
 }
 
-/*
- * Cleans the input of carriage return, newline
- */
-function cleanInput(data) {
-	return data.toString().replace(/(\r\n|\n|\r)/gm,"").trim();
-}
-
-// Create a new server and provide a callback for when a connection occurs
-var server = net.createServer(newSocket);
- 
-// Listen on port
-server.listen(80);
+io.sockets.on('connection', newSocket);
