@@ -13,7 +13,7 @@ function newSocket(socket) {
 	});
 
 	socket.webSocket.on('message', function(msg) {
-		socket.write(msg);
+		socket.write(msg + '\n');
 	});
 	socket.webSocket.on('end', function(msg) {
 		socket.end();

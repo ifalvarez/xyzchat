@@ -16,8 +16,8 @@ function newSocket(socket) {
 	var user = {socket: socket, status: GETTING_NICKNAME, nickname: "Guest"};
 	users.push(user);
 	socket.user = user;
-	socket.send('Welcome to the XYZ chat server\n');
-	socket.send('Login Name?\n');
+	socket.send('Welcome to the XYZ chat server');
+	socket.send('Login Name?');
 
 	socket.on('message', function(msg) {
 		onData(socket, msg);
@@ -50,7 +50,7 @@ function onData(socket, data) {
 		if (user.room){
 			sendMessage(user.room, user.nickname + ": " + data );
 		}else{
-			socket.send("Join a room first using /join or see a list of the active rooms with /rooms\n");
+			socket.send("Join a room first using /join or see a list of the active rooms with /rooms");
 		}		
 	}
 	
@@ -65,12 +65,12 @@ function assignNickname(socket, nickname){
 		return memo || iuser.nickname == nickname;
 	}, false);
 	if(isNameUsed){
-		socket.send('Sorry name taken\n');
-		socket.send('Login name?\n');
+		socket.send('Sorry name taken');
+		socket.send('Login name?');
 	}else{
 		user.nickname = nickname;
 		user.status = READY;
-		socket.send('Welcome ' + nickname + '!\n');
+		socket.send('Welcome ' + nickname + '!');
 	}
 }
 
@@ -80,28 +80,46 @@ function assignNickname(socket, nickname){
 function executeCommand(socket, command){
 	var args = command.split(" ");
 	switch(args[0]){
+		// Quit the chat server
 		case '/quit':
 			quitChat(socket.user);
 			break;
+
+		// Lists the active rooms in the chat
 		case '/rooms':
-			socket.send('Active rooms are:\n');
+			socket.send('Active rooms are:');
 			__.each(rooms, function (room){
-				socket.send('* ' + room.name + ' (' + room.users.length + ')\n');
+				socket.send('* ' + room.name + ' (' + room.users.length + ')');
 			});
-			socket.send("end of list.\n");
+			socket.send("end of list.");
 			break;
+
+		// Join a chat room
 		case '/join':
 			if (args[1]) {
 				joinRoom(args[1], socket.user);
 			}else {
-				socket.send("Specify a room to join. e.g: /join games\n");
+				socket.send("Specify a room to join. e.g: /join games");
 			}
 			break;
+
+		// Leave a chat room
 		case '/leave':
 			leaveRoom(socket.user);
 			break;
+
+		// Send a private message
+		case '/w':
+			if (args[1] && args[2]) {
+				sendPrivateMessage(socket.user, args[1], args.slice(2).join(" "));
+			}else {
+				socket.send("Specify a user and a message. e.g: /w Ivan hi man!");
+			}
+			break;
+
+		// Unrecognized command	
 		default:
-			socket.send('Unrecognized command\n');
+			socket.send('Unrecognized command');
 	}
 }
 
@@ -110,7 +128,7 @@ function executeCommand(socket, command){
  */
 function sendMessage(room, message){
 	__.each(room.users, function(user){
-		user.socket.send(message + '\n');
+		user.socket.send(message);
 	});
 }
 
@@ -120,9 +138,25 @@ function sendMessage(room, message){
 function sendMessageFiltered(room, message, sender){
 	__.each(room.users, function(user){
 		if(sender != user){
-			user.socket.send(message + '\n');
+			user.socket.send(message);
 		}
 	});
+}
+
+/*
+ * Sends a message to a single user. 
+ */
+function sendPrivateMessage(sender, targetNickname, message){
+	var user = __.find(users, function(iuser){
+		return targetNickname == iuser.nickname;
+	});
+	if (user){
+		user.socket.send("private from " + sender.nickname + ": " + message);
+		sender.socket.send("private to " + user.nickname + ": " + message);
+	}else{
+		sender.socket.send("User " + targetNickname + " not found.");
+	}
+	
 }
 
 /*
@@ -136,15 +170,15 @@ function joinRoom(roomName, user){
 	}
 	user.room = room;
 	user.room.users.push(user);
-	user.socket.send("entering room: " + roomName + '\n');
+	user.socket.send("entering room: " + roomName + '');
 	__.each(user.room.users, function(iuser){
-		user.socket.send("* " + iuser.nickname);
+		var imsg = "* " + iuser.nickname;
 		if (iuser == user){
-			user.socket.send(" (** this is you)");
+			imsg = imsg + " (** this is you)";
 		}
-		user.socket.send("\n");
+		user.socket.send(imsg);
 	});
-	user.socket.send("end of list.\n");
+	user.socket.send("end of list.");
 	sendMessageFiltered(room, "* new user joined " + roomName + ": " + user.nickname, user);
 }
 
@@ -159,7 +193,7 @@ function leaveRoom(user){
 	}
 	user.room = null;
 	sendMessageFiltered(room, "* user has left " + room.name + ": " + user.nickname);
-	user.socket.send("* user has left " + room.name + ": " + user.nickname + " (** this is you)\n");
+	user.socket.send("* user has left " + room.name + ": " + user.nickname + " (** this is you)");
 }
 
 /*
@@ -170,7 +204,7 @@ function quitChat(user){
 	if (user.room){
 		leaveRoom(user);
 	}
-	user.socket.send('BYE\n');
+	user.socket.send('BYE');
 	user.socket.emit('end');
 	delete user.socket.user;
 	users.splice(users.indexOf(user), 1);
