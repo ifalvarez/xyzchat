@@ -163,6 +163,9 @@ function sendPrivateMessage(sender, targetNickname, message){
  * Add the user to a chat room
  */
 function joinRoom(roomName, user){
+	if (user.room){
+		leaveRoom(user);
+	}
 	var room = __.find(rooms, function (iroom){return iroom.name == roomName;});
 	if(!room){
 		room = {name: roomName, users:[]};

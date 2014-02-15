@@ -2,47 +2,103 @@
 <html>
 <head>
   <link rel="stylesheet" type="text/css" href="bootstrap/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="css/chat.css" />
 </head>
 <body>
-
-  <div id="container">
-      <section id="messages-container">
-          <div id="messages"></div>
-      </section>
-      <section id="users"></section>
-      
-      <div class="clear"></div>
-
-      <section id="msg-input">
-          <input name="message" size="50" type="text" placeholder="Mensaje..." autofocus="true"/>
-      </section>
+  <nav class="navbar navbar-default navbar-fixed-top" role="navigation">
+    <div class="container-fluid">
+      <!-- Brand and toggle get grouped for better mobile display -->
+      <div class="navbar-header">
+        <a class="navbar-brand" href="#"><span class="glyphicon glyphicon-comment"></span> XYZ Chat</a>
+      </div>
+  </div><!-- /.container-fluid -->
+</nav>
+  <div class="container">
+    <div class="row fullHeight">
+      <div class="col-xs-3"></div>
+      <div class="col-xs-6 fullHeight">
+        <div class="panel panel-primary fullHeight">
+          <div class="panel-body">
+            <ul class="chat list-group">
+              <!-- The messages will be added here -->
+            </ul>
+          </div>
+          <div class="panel-footer">
+            <div class="input-group">
+              <input id="btn-input" type="text" class="form-control input-sm" placeholder="Type your message here..." 
+                autofocus="true"/>
+              <span class="input-group-btn">
+                <button class="btn btn-warning btn-sm" id="btn-chat">Send</button>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script type="text/javascript" src="/socket.io/socket.io.js"></script>
   <script type="text/javascript" src="js/jquery-2.1.0.min.js"></script>
+  <script type="text/javascript" src="bootstrap/js/bootstrap.min.js"></script>
+  <script type="text/javascript" src="js/underscore-min.js"></script>
+  
+  <!-- Left chat template -->
+  <script type="text/template" id="leftChatTemplate">
+    <li class="list-group-item talk talk-left">
+      <%- msg %>
+    </li>
+  </script>
+
+  <!-- Right chat template -->
+  <script type="text/template" id="rightChatTemplate">
+    <li class="list-group-item talk talk-right">
+      <%- msg %>
+    </li>
+  </script>
+
+  <!-- Templating and messaging -->
   <script type="text/javascript">
+    var leftChatTemplate;
+    var rightChatTemplate;
+    var socket;
+
+    function send(field){
+      $(leftChatTemplate({msg: field.val()})).appendTo(".chat");
+      socket.send(field.val());
+      field.val('');
+    }
+
     $(function(){
-      var socket = io.connect('http://' + window.location.hostname + ':7777', {'force new connection': true});
-      $('#msg-input input').keypress(function(e) {
-          if (e.which == 13) {
-              socket.send($(this).val());
-              $(this).val('');
-          }
-      });
+      // Precompile templates
+      leftChatTemplate = _.template(
+        $("#leftChatTemplate").html()
+      );
+      rightChatTemplate = _.template(
+        $("#rightChatTemplate").html()
+      );
 
+      // Connect to the server and bind events
+      socket = io.connect('http://' + window.location.hostname + ':7777', {'force new connection': true});
+      
       socket.on("message", function(msg) {
-          $(document.createElement("div"))
-          .html(msg)
-          .appendTo("#messages");
-
-          // See the last message
-          $('#messages-container').scrollTop($('#messages').height());
+        $(rightChatTemplate({msg: msg})).appendTo(".chat");
+        $('.panel-body').scrollTop($('.chat').height());
       });
       $(window).on('beforeunload', function(){
         socket.close();
       });
-    });
 
+      // Bind the send message function
+      $('#btn-input').keypress(function(e) {
+        if (e.which == 13) {
+          send($(this));
+        }
+      });
+      $('#btn-chat').click(function(e) {
+        send($("#btn-input"));
+      });
+    });
   </script>
+  
 </body>
 </html>
