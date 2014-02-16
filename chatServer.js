@@ -1,30 +1,27 @@
 var io = require('socket.io').listen(7777);
 var __ = require('underscore');
+var util = require('util');
+var User = require('./user.js');
+
  
 var users = [];
 var rooms = [];
 
-//User statuses
-var READY = 1;
-var GETTING_NICKNAME = 2;
  
 /*
  * Callback called when a new user connets to a socket.
  */
 function newSocket(socket) {
-	console.log("new webSocket client");
-	var user = {socket: socket, status: GETTING_NICKNAME, nickname: "Guest"};
+	var user = new User(socket);
 	users.push(user);
 	socket.user = user;
-	socket.send('Welcome to the XYZ chat server');
-	socket.send('Login Name?');
+	socket.send('Welcome to the XYZ chat server\nLogin Name?');
 
 	socket.on('message', function(msg) {
 		onData(socket, msg);
 	});
 
 	socket.on('disconnect', function() {
-		console.log("--------------Disconnect");
 		if (socket.user){
 			quitChat(socket.user);
 		}
@@ -36,9 +33,8 @@ function newSocket(socket) {
  */
 function onData(socket, data) {
 	var user = socket.user;
-
 	// if getting nickname
-	if (user.status == GETTING_NICKNAME){
+	if (user.status == User.GETTING_NICKNAME){
 		assignNickname(socket, data);
 	} 
 	// if a command is given
@@ -65,11 +61,10 @@ function assignNickname(socket, nickname){
 		return memo || iuser.nickname == nickname;
 	}, false);
 	if(isNameUsed){
-		socket.send('Sorry name taken');
-		socket.send('Login name?');
+		socket.send('Sorry name taken\nLogin name?');
 	}else{
 		user.nickname = nickname;
-		user.status = READY;
+		user.status = User.READY;
 		socket.send('Welcome ' + nickname + '!');
 	}
 }
@@ -87,11 +82,12 @@ function executeCommand(socket, command){
 
 		// Lists the active rooms in the chat
 		case '/rooms':
-			socket.send('Active rooms are:');
+			var toSend = "Active rooms are:\n";
 			__.each(rooms, function (room){
-				socket.send('* ' + room.name + ' (' + room.users.length + ')');
+				toSend = toSend + '* ' + room.name + ' (' + room.users.length + ')\n';
 			});
-			socket.send("end of list.");
+			toSend = toSend + "end of list.";
+			socket.send(toSend);
 			break;
 
 		// Join a chat room
@@ -173,15 +169,18 @@ function joinRoom(roomName, user){
 	}
 	user.room = room;
 	user.room.users.push(user);
-	user.socket.send("entering room: " + roomName + '');
+	var toSend = "";
+	toSend = toSend + "entering room: " + roomName + '\n';
 	__.each(user.room.users, function(iuser){
-		var imsg = "* " + iuser.nickname;
+		toSend = toSend + "* " + iuser.nickname;
 		if (iuser == user){
-			imsg = imsg + " (** this is you)";
+			toSend = toSend + " (** this is you)\n";
+		}else{
+			toSend = toSend + "\n";
 		}
-		user.socket.send(imsg);
 	});
-	user.socket.send("end of list.");
+	toSend = toSend + "end of list.";
+	user.socket.send(toSend);
 	sendMessageFiltered(room, "* new user joined " + roomName + ": " + user.nickname, user);
 }
 

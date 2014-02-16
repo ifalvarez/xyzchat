@@ -43,46 +43,39 @@
   <script type="text/javascript" src="bootstrap/js/bootstrap.min.js"></script>
   <script type="text/javascript" src="js/underscore-min.js"></script>
   
-  <!-- Left chat template -->
-  <script type="text/template" id="leftChatTemplate">
-    <li class="list-group-item talk talk-left">
-      <%- msg %>
-    </li>
-  </script>
-
-  <!-- Right chat template -->
-  <script type="text/template" id="rightChatTemplate">
-    <li class="list-group-item talk talk-right">
-      <%- msg %>
+  <!-- Chat template -->
+  <script type="text/template" id="chatTemplate">
+    <li class="list-group-item talk <%- talkClass %>">
+      <% _.each( msgs, function( msg ){ %>
+        <%- msg %>
+        </br>
+      <% }); %>
     </li>
   </script>
 
   <!-- Templating and messaging -->
   <script type="text/javascript">
-    var leftChatTemplate;
-    var rightChatTemplate;
+    var chatTemplate;
     var socket;
 
     function send(field){
-      $(leftChatTemplate({msg: field.val()})).appendTo(".chat");
+      $(chatTemplate({msgs: [field.val()], talkClass: "talk-left"})).appendTo(".chat");
       socket.send(field.val());
       field.val('');
     }
 
     $(function(){
       // Precompile templates
-      leftChatTemplate = _.template(
-        $("#leftChatTemplate").html()
+      chatTemplate = _.template(
+        $("#chatTemplate").html()
       );
-      rightChatTemplate = _.template(
-        $("#rightChatTemplate").html()
-      );
-
+      
       // Connect to the server and bind events
       socket = io.connect('http://' + window.location.hostname + ':7777', {'force new connection': true});
       
       socket.on("message", function(msg) {
-        $(rightChatTemplate({msg: msg})).appendTo(".chat");
+        msgs = msg.split("\n");
+        $(chatTemplate({msgs: msgs, talkClass: "talk-right"})).appendTo(".chat");
         $('.panel-body').scrollTop($('.chat').height());
       });
       $(window).on('beforeunload', function(){
