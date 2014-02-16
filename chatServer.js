@@ -2,6 +2,7 @@ var io = require('socket.io').listen(7777);
 var __ = require('underscore');
 var util = require('util');
 var User = require('./user.js');
+var Room = require('./room.js');
 
  
 var users = [];
@@ -44,7 +45,7 @@ function onData(socket, data) {
 	// else send text to the room
 	else{
 		if (user.room){
-			sendMessage(user.room, user.nickname + ": " + data );
+			user.room.sendMessage(user.nickname + ": " + data );
 		}else{
 			socket.send("Join a room first using /join or see a list of the active rooms with /rooms");
 		}		
@@ -120,26 +121,6 @@ function executeCommand(socket, command){
 }
 
 /*
- * Sends a message to all the users in a room. 
- */
-function sendMessage(room, message){
-	__.each(room.users, function(user){
-		user.socket.send(message);
-	});
-}
-
-/*
- * Sends a message to all the users in a room except the sender. 
- */
-function sendMessageFiltered(room, message, sender){
-	__.each(room.users, function(user){
-		if(sender != user){
-			user.socket.send(message);
-		}
-	});
-}
-
-/*
  * Sends a message to a single user. 
  */
 function sendPrivateMessage(sender, targetNickname, message){
@@ -164,7 +145,7 @@ function joinRoom(roomName, user){
 	}
 	var room = __.find(rooms, function (iroom){return iroom.name == roomName;});
 	if(!room){
-		room = {name: roomName, users:[]};
+		room = new Room(roomName);
 		rooms.push(room);
 	}
 	user.room = room;
@@ -181,7 +162,7 @@ function joinRoom(roomName, user){
 	});
 	toSend = toSend + "end of list.";
 	user.socket.send(toSend);
-	sendMessageFiltered(room, "* new user joined " + roomName + ": " + user.nickname, user);
+	room.sendMessageFiltered("* new user joined " + roomName + ": " + user.nickname, user);
 }
 
 /*
@@ -194,7 +175,7 @@ function leaveRoom(user){
 		rooms.splice(rooms.indexOf(room), 1);
 	}
 	user.room = null;
-	sendMessageFiltered(room, "* user has left " + room.name + ": " + user.nickname);
+	room.sendMessageFiltered("* user has left " + room.name + ": " + user.nickname);
 	user.socket.send("* user has left " + room.name + ": " + user.nickname + " (** this is you)");
 }
 

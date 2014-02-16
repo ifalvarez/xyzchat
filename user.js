@@ -10,10 +10,6 @@ function User(socket) {
   this.room = null;
 }
 
-User.prototype.fooBar = function() {
-
-};
-
 Object.defineProperty(User, "READY", {
   enumerable: false,
   configurable: false,
