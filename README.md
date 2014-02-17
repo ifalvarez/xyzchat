@@ -12,3 +12,14 @@ github repo: https://github.com/ifalvarez/xyzchat
 
 This chat is my first node.js application, but it seemed like the right tool for the test :)
 The process was iterative. I first built the basic text chat, when that worked, I created the web client. After that I refactored to separate the chat logic from the presentation to be able to give proper features to the web client, built those features and at the end just tweaked it a bit to try to make it look nice.
+
+To install it in your environment:
+
+Prerequites:
+- Node.js: http://nodejs.org/download/
+- Git: http://git-scm.com/download
+
+1. Clone the repo:      git clone https://github.com/ifalvarez/xyzchat.git xyzchat
+2. Go to the folder:    cd xyzchat
+3. Run the main script: node main.js
+4. Access is on ports:  9399 for tcp, 8090 for web
