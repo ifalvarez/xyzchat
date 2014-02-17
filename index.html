@@ -46,9 +46,39 @@
   <!-- Chat template -->
   <script type="text/template" id="chatTemplate">
     <li class="list-group-item talk <%- talkClass %>">
-      <% _.each( msgs, function( msg ){ %>
-        <%- msg %>
-        </br>
+      <% _.each( messages, function( msg ){ %>
+        <% if (isPrivate) { %>
+          <span class="badge">Private</span>
+        <% } %>
+        <% if (sender) { %>
+          <%- sender %>:
+        <% } %>
+        <% switch (msg) {
+          case ':)':
+        %>  <img src="img/happy.png" class="emoticon"/>
+        <%  break;
+          case ':D':
+        %>  <img src="img/lol.png" class="emoticon"/>
+        <%  break;
+          case ':P':
+        %>  <img src="img/tongue.png" class="emoticon"/>
+        <%  break;
+          case ';)':
+        %>  <img src="img/wink.png" class="emoticon"/>
+        <%  break;
+          case ":'(":
+        %>  <img src="img/cry.png" class="emoticon"/>
+        <%  break;
+          case ':@':
+        %>  <img src="img/angry.png" class="emoticon"/>
+        <%  break;
+          case ':*':
+        %>  <img src="img/kiss.png" class="emoticon"/>
+        <%  break;
+          default: %>
+            <%- msg %>
+        <% } %>
+          </br>
       <% }); %>
     </li>
   </script>
@@ -59,7 +89,7 @@
     var socket;
 
     function send(field){
-      $(chatTemplate({msgs: [field.val()], talkClass: "talk-left"})).appendTo(".chat");
+      $(chatTemplate({messages: [field.val()], isPrivate: null, sender: null, talkClass: "talk-left"})).appendTo(".chat");
       socket.send(field.val());
       field.val('');
     }
@@ -73,9 +103,9 @@
       // Connect to the server and bind events
       socket = io.connect('http://' + window.location.hostname + ':7777', {'force new connection': true});
       
-      socket.on("message", function(msg) {
-        msgs = msg.split("\n");
-        $(chatTemplate({msgs: msgs, talkClass: "talk-right"})).appendTo(".chat");
+      socket.on("message", function(data) {
+        var messages = data.message.split("\n");
+        $(chatTemplate({messages: messages, isPrivate: data.isPrivate, sender: data.sender, talkClass: "talk-right"})).appendTo(".chat");
         $('.panel-body').scrollTop($('.chat').height());
       });
       $(window).on('beforeunload', function(){

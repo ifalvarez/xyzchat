@@ -12,8 +12,16 @@ function newSocket(socket) {
 		socket.webSocket.send(data);
 	});
 
-	socket.webSocket.on('message', function(msg) {
-		socket.write(msg + '\n');
+	socket.webSocket.on('message', function(data) {
+		var toWrite = "";
+		if (data.isPrivate) {
+			toWrite = toWrite + "Private from ";
+		}
+		if (data.sender) {
+			toWrite = toWrite + data.sender + ": ";
+		}
+		toWrite = toWrite + data.message + "\n";
+		socket.write(toWrite);
 	});
 	socket.webSocket.on('end', function(msg) {
 		socket.end();

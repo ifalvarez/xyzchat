@@ -10,7 +10,7 @@ function Room(name) {
  */
 Room.prototype.sendMessage = function sendMessage(message){
 	__.each(this.users, function(user){
-		user.socket.send(message);
+		user.socket.emit("message", message);
 	});
 }
 
@@ -20,7 +20,7 @@ Room.prototype.sendMessage = function sendMessage(message){
 Room.prototype.sendMessageFiltered = function sendMessageFiltered(message, sender){
 	__.each(this.users, function(user){
 		if(sender != user){
-			user.socket.send(message);
+			user.socket.emit("message", message);
 		}
 	});
 }

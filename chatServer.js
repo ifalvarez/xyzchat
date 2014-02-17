@@ -16,7 +16,7 @@ function newSocket(socket) {
 	var user = new User(socket);
 	users.push(user);
 	socket.user = user;
-	socket.send('Welcome to the XYZ chat server\nLogin Name?');
+	socket.emit("message", {message: 'Welcome to the XYZ chat server\nLogin Name?'});
 
 	socket.on('message', function(msg) {
 		onData(socket, msg);
@@ -45,9 +45,9 @@ function onData(socket, data) {
 	// else send text to the room
 	else{
 		if (user.room){
-			user.room.sendMessage(user.nickname + ": " + data );
+			user.room.sendMessage({message: data, sender: user.nickname} );
 		}else{
-			socket.send("Join a room first using /join or see a list of the active rooms with /rooms");
+			socket.emit("message", {message: "Join a room first using /join or see a list of the active rooms with /rooms"});
 		}		
 	}
 	
@@ -62,11 +62,11 @@ function assignNickname(socket, nickname){
 		return memo || iuser.nickname == nickname;
 	}, false);
 	if(isNameUsed){
-		socket.send('Sorry name taken\nLogin name?');
+		socket.emit("message", {message: 'Sorry name taken\nLogin name?'});
 	}else{
 		user.nickname = nickname;
 		user.status = User.READY;
-		socket.send('Welcome ' + nickname + '!');
+		socket.emit("message", {message: 'Welcome ' + nickname + '!'});
 	}
 }
 
@@ -88,7 +88,7 @@ function executeCommand(socket, command){
 				toSend = toSend + '* ' + room.name + ' (' + room.users.length + ')\n';
 			});
 			toSend = toSend + "end of list.";
-			socket.send(toSend);
+			socket.emit("message", {message: toSend});
 			break;
 
 		// Join a chat room
@@ -96,7 +96,7 @@ function executeCommand(socket, command){
 			if (args[1]) {
 				joinRoom(args[1], socket.user);
 			}else {
-				socket.send("Specify a room to join. e.g: /join games");
+				socket.emit("message", {message: "Specify a room to join. e.g: /join games"});
 			}
 			break;
 
@@ -110,13 +110,13 @@ function executeCommand(socket, command){
 			if (args[1] && args[2]) {
 				sendPrivateMessage(socket.user, args[1], args.slice(2).join(" "));
 			}else {
-				socket.send("Specify a user and a message. e.g: /w Ivan hi man!");
+				socket.emit("message", {message: "Specify a user and a message. e.g: /w Ivan hi man!"});
 			}
 			break;
 
 		// Unrecognized command	
 		default:
-			socket.send('Unrecognized command');
+			socket.emit("message", {message: 'Unrecognized command'});
 	}
 }
 
@@ -128,10 +128,10 @@ function sendPrivateMessage(sender, targetNickname, message){
 		return targetNickname == iuser.nickname;
 	});
 	if (user){
-		user.socket.send("private from " + sender.nickname + ": " + message);
-		sender.socket.send("private to " + user.nickname + ": " + message);
+		user.socket.emit("message", {message: message, sender: sender.nickname, isPrivate: true});
+		sender.socket.emit("message", {message: "private to " + user.nickname + ": " + message});
 	}else{
-		sender.socket.send("User " + targetNickname + " not found.");
+		sender.socket.emit("message", {message: "User " + targetNickname + " not found."});
 	}
 	
 }
@@ -161,8 +161,8 @@ function joinRoom(roomName, user){
 		}
 	});
 	toSend = toSend + "end of list.";
-	user.socket.send(toSend);
-	room.sendMessageFiltered("* new user joined " + roomName + ": " + user.nickname, user);
+	user.socket.emit("message", {message: toSend});
+	room.sendMessageFiltered({message: "* new user joined " + roomName + ": " + user.nickname}, user);
 }
 
 /*
@@ -175,8 +175,8 @@ function leaveRoom(user){
 		rooms.splice(rooms.indexOf(room), 1);
 	}
 	user.room = null;
-	room.sendMessageFiltered("* user has left " + room.name + ": " + user.nickname);
-	user.socket.send("* user has left " + room.name + ": " + user.nickname + " (** this is you)");
+	room.sendMessageFiltered({message: "* user has left " + room.name + ": " + user.nickname});
+	user.socket.emit("message", {message: "* user has left " + room.name + ": " + user.nickname + " (** this is you)"});
 }
 
 /*
@@ -187,7 +187,7 @@ function quitChat(user){
 	if (user.room){
 		leaveRoom(user);
 	}
-	user.socket.send('BYE');
+	user.socket.emit("message", {message: 'BYE'});
 	user.socket.emit('end');
 	delete user.socket.user;
 	users.splice(users.indexOf(user), 1);
