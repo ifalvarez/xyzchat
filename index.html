@@ -87,9 +87,9 @@
   <script type="text/javascript">
     var chatTemplate;
     var socket;
+    var user = "no user";
 
     function send(field){
-      $(chatTemplate({messages: [field.val()], isPrivate: null, sender: null, talkClass: "talk-left"})).appendTo(".chat");
       socket.send(field.val());
       field.val('');
     }
@@ -105,9 +105,15 @@
       
       socket.on("message", function(data) {
         var messages = data.message.split("\n");
-        $(chatTemplate({messages: messages, isPrivate: data.isPrivate, sender: data.sender, talkClass: "talk-right"})).appendTo(".chat");
+        var talkClass = (data.sender == user) ? "talk-left" : "talk-right";
+        $(chatTemplate({messages: messages, isPrivate: data.isPrivate, sender: data.sender, talkClass: talkClass})).appendTo(".chat");
         $('.panel-body').scrollTop($('.chat').height());
       });
+
+      socket.on("user", function(data){
+        user = data.user;
+      });
+
       $(window).on('beforeunload', function(){
         socket.close();
       });

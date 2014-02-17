@@ -67,6 +67,7 @@ function assignNickname(socket, nickname){
 		user.nickname = nickname;
 		user.status = User.READY;
 		socket.emit("message", {message: 'Welcome ' + nickname + '!'});
+		socket.emit("user", {user: nickname});
 	}
 }
 
