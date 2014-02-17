@@ -19,6 +19,7 @@ Prerequites:
 - Node.js: http://nodejs.org/download/
 - Git: http://git-scm.com/download
 
+Instructions:
 1. Clone the repo:      git clone https://github.com/ifalvarez/xyzchat.git xyzchat
 2. Go to the folder:    cd xyzchat
 3. Run the main script: node main.js
